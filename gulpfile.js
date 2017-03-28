@@ -6,7 +6,7 @@ const eslint = require('eslint');
 
 gulp.task('develop',function () {
     let stream = nodemon({
-        script: 'index.js',
+        script: 'app.js',
         ext: 'js json pug',
         env: {
             'NODE_ENV': 'development',
