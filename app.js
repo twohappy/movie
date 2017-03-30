@@ -9,6 +9,7 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const morgan = require('morgan');
+const muliparty = require('connect-multiparty');
 const MongoStore = require('connect-mongo')(session);
 const port = process.env.PORT || 3000;
 const app = express();
@@ -24,6 +25,7 @@ app.set('view engine', 'pug');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(serveStatic('public'));
 app.use(cookieParser());
+app.use(muliparty());
 app.use(session({
     secret: 'imooc',
     store: new MongoStore({

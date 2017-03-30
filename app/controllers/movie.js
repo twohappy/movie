@@ -2,9 +2,12 @@
  * Created by twohappy on 2017/3/27.
  */
 const Movie = require('../models/movie');
+const Category = require('../models/category');
 const Comment = require('../models/comment');
 const moment = require('moment');
 const _ = require('underscore');
+const fs = require('fs');
+const path = require('path');
 
 // detail page
 exports.detail = function (req, res) {
@@ -15,6 +18,11 @@ exports.detail = function (req, res) {
     //         movie: movie
     //     });
     // });
+    Movie.update({_id: id}, {$inc: {pv: 1}}, function (err) {
+        if (err) {
+            console.log(err);
+        }
+    });
     Movie.findById(id, function (err, movie) {
         Comment
             .find({movie: id})
@@ -32,42 +40,69 @@ exports.detail = function (req, res) {
 };
 
 // admin page
-exports.save = function (req, res) {
-    res.render('admin', {
-        title: '后台页',
-        movie: {
-            director: '',
-            country: '',
-            title: '',
-            year: '',
-            poster: '',
-            language: '',
-            flash: '',
-            summary: ''
-        }
-    });
+exports.new = function (req, res) {
+    Category.find({}, function (err, categories) {
+        res.render('admin', {
+            title: '后台页',
+            categories: categories,
+            movie: {}
+        });
+    })
 };
 
 //admin update movie
 exports.update = function (req, res) {
     let id = req.params.id;
     if (id) {
-        Movie.findById(id, function (err, movie) {
-            res.render('admin', {
-                title: '后台更新页面',
-                movie: movie
+        Category.find({}, function (err, categories) {
+            Movie.findById(id, function (err, movie) {
+                res.render('admin', {
+                    title: '后台更新页面',
+                    movie: movie,
+                    categories: categories
+                });
             });
         });
     }
 };
 
+// admin poster
+exports.savePoster = function (req, res, next) {
+    let posterData = req.files.uploadPoster;
+    let filePath = posterData.path;
+    let originalFilename = posterData.originalFilename;
+
+    console.log(req.files);
+    console.log(req.poster);
+
+    if (originalFilename) {
+        fs.readFile(filePath, function (err, data) {
+            let timestamp = Date.now();
+            let type = posterData.type.split('/')[1];
+            let poster = timestamp + '.' + type;
+            let newPath = path.join(__dirname, '../../', '/public/upload/' + poster);
+            fs.writeFile(newPath, data, function (err) {
+                req.poster = poster;
+                next();
+            })
+        })
+    } else {
+        next();
+    }
+};
+
 //admin post movie
 
-exports.new = function (req, res) {
+exports.save = function (req, res) {
     let id = req.body.movie._id;
     let movieObj = req.body.movie;
     let _movie;
-    if (id !== 'undefined' && id !== '') {
+
+    if (req.poster) {
+        movieObj.poster = req.poster;
+    }
+
+    if (id) {
         Movie.findById(id, function (err, movie) {
             if (err) {
                 console.log(err);
@@ -81,22 +116,40 @@ exports.new = function (req, res) {
             });
         });
     } else {
+        _movie = new Movie(movieObj);
+
+        let categoryId = movieObj.category;
+        let categoryName = movieObj.categoryName;
         console.log(movieObj);
-        _movie = new Movie({
-            director: movieObj.director,
-            title: movieObj.title,
-            country: movieObj.country,
-            language: movieObj.language,
-            year: movieObj.year,
-            poster: movieObj.poster,
-            summary: movieObj.summary,
-            flash: movieObj.flash
-        });
         _movie.save(function (err, movie) {
             if (err) {
                 console.log(err);
             }
-            res.redirect('/movie/' + movie._id);
+            if (categoryId) {
+                Category.findById(categoryId, function (err, category) {
+                    if (err) {
+                        console.log(err)
+                    }
+                    category.movies.push(movie._id);
+                    category.save(function (err, category) {
+                        res.redirect('/movie/' + movie._id);
+                    });
+                });
+            } else if (categoryName) {
+                let category = new Category({
+                    name: categoryName,
+                    movies: [movie._id]
+                });
+                category.save(function (err, category) {
+                    movie.category = category._id;
+                    movie.save(function (err, movie) {
+                        if (err) {
+                            console.log(err);
+                        }
+                        res.redirect('/movie/' + movie._id);
+                    })
+                });
+            }
         });
     }
 };

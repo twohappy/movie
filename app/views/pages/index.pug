@@ -3,11 +3,21 @@ extends ../layout
 block content
   .container
     .row
-      each movie in movies
-        .col-md-2
-          .thumbnail
-            a(href="/movie/" + movie._id)
-              img(src= movie.poster ,alt= movie.title)
-            .captain
-              h3 #{movie.title}
-              p: a.btn.btn-primary(href='/movie/' + movie._id,role='button') 观看预告片
+      each cat in categories
+        .panel.panel-default
+          .panel-heading
+            h3
+              a(href='/results?cat=' + cat._id + '&p=0') #{cat.name}
+          .panel-body
+            if cat.movies && cat.movies.length > 0
+              each movie in cat.movies
+                .col-md-2
+                  .thumbnail
+                    a(href="/movie/" + movie._id)
+                      if movie.poster.indexOf('https:') > -1
+                        img(src= movie.poster ,alt= movie.title)
+                      else
+                        img(src="/upload/"+movie.poster,alt=movie.title)
+                    .captain
+                      h3 #{movie.title}
+                      p: a.btn.btn-primary(href='/movie/' + movie._id,role='button') 观看预告片

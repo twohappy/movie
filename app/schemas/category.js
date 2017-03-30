@@ -1,24 +1,15 @@
+/**
+ * Created by twohappy on 2017/3/28.
+ */
 let mongoose = require('mongoose');
 let Schema = mongoose.Schema;
 let ObjectId = Schema.Types.ObjectId;
-
-let MovieSchema = new Schema({
-    director: String,
-    title: String,
-    language: String,
-    country: String,
-    summary: String,
-    flash: String,
-    poster: String,
-    year: Number,
-    pv: {
-        type: Number,
-        default: 0
-    },
-    category: {
+let CategorySchema = new Schema({
+    name: String,
+    movies: [{
         type: ObjectId,
-        ref: 'Category'
-    },
+        ref: 'Movie'
+    }],
     meta: {
         createdAt: {
             type: Date,
@@ -31,7 +22,7 @@ let MovieSchema = new Schema({
     }
 });
 
-MovieSchema.pre('save', function (next) {
+CategorySchema.pre('save', function (next) {
     if (this.isNew) {
         this.meta.createdAt = this.meta.updatedAt = Date.now();
     } else {
@@ -40,7 +31,7 @@ MovieSchema.pre('save', function (next) {
     next()
 })
 
-MovieSchema.statics = {
+CategorySchema.statics = {
     fetch: function (cb) {
         return this
             .find({})
@@ -54,4 +45,4 @@ MovieSchema.statics = {
     }
 }
 
-module.exports = MovieSchema;
+module.exports = CategorySchema;
